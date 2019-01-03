@@ -1,0 +1,62 @@
+#!/usr/bin/env python2
+
+import time
+import json
+from AWSIoTPythonSDK.MQTTLib import AWSIoTMQTTShadowClient
+import pymysql
+# This is for connectin to a mysql database
+con = pymysql.connect('52.34.230.117', 'ubuntu', 'awsZEG157', 'zeg')
+
+def customCallback(payload, responseStatus, token):
+    print("Received a delta message:")
+    payloadDict = json.loads(payload)
+    deltaMessage = json.dumps(payloadDict["state"])
+    print(deltaMessage)
+# Parsing json fromat to extract out the desired numbers
+    j = json.loads(deltaMessage)
+    x = j["temperature"]
+    y = j["humidity"]
+    z = j["voltage"]
+    i = z/1
+    p = z*i
+    print(x)
+    print(y)
+    print(z)
+    print(i)
+    print(p)
+    with con:
+
+        cur = con.cursor()
+        sql = "INSERT INTO `dashboard`(`temperature`, `humidity`, `voltage`, `current`, `power`)    VALUES(%s, %s, %s, %s, %s)"
+        cur.execute(sql, (x, y, z, i, p))
+        rows = cur.fetchall()
+
+        for row in rows:
+            print(row)
+# This is for AWS-iot-SDK-Device-Python
+# For certificate based connection
+myShadowClient = AWSIoTMQTTShadowClient("test2")
+# For Websocket connection
+# myMQTTClient = AWSIoTMQTTClient("myClientID", useWebsocket=True)
+# Configurations
+# For TLS mutual authentication
+myShadowClient.configureEndpoint("aspfewrimk8xx-ats.iot.ap-southeast-1.amazonaws.com", 8883)
+# For Websocket
+# myShadowClient.configureEndpoint("YOUR.ENDPOINT", 443)
+# For TLS mutual authentication with TLS ALPN extension
+# myShadowClient.configureEndpoint("YOUR.ENDPOINT", 443)
+myShadowClient.configureCredentials("/root/AmazonRootCA1.pem", "/root/11d5729787-private.pem.key", "/root/11d5729787-certificate.pem.crt"
+# For Websocket, we only need to configure the root CA
+# myShadowClient.configureCredentials("YOUR/ROOT/CA/PATH")
+myShadowClient.configureConnectDisconnectTimeout(10)  # 10 sec
+myShadowClient.configureMQTTOperationTimeout(5)  # 5 sec
+
+# Connect to the shadow
+myShadowClient.connect()
+# Create a device shadow instance using persistent subscription
+myDeviceShadow = myShadowClient.createShadowHandlerWithName("test2", True)
+
+myDeviceShadow.shadowRegisterDeltaCallback(customCallback)
+
+while True:
+    time.sleep(5)
