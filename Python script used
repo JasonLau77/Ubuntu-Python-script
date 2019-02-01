@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 import time
 import json
@@ -17,18 +17,26 @@ def customCallback(payload, responseStatus, token):
     x = j["temperature"]
     y = j["humidity"]
     z = j["voltage"]
+    V = j["Solar Voltage"]
     i = z/1
     p = z*i
+    I = V/2
+    P = v*I
+    d = time.strftime('%Y-%m-%d')
+    t = time.strftime('%H:%M:%S')
     print(x)
     print(y)
     print(z)
     print(i)
     print(p)
+    print(V)
+    print(I)
+    print(P)
     with con:
 
         cur = con.cursor()
-        sql = "INSERT INTO `dashboard`(`temperature`, `humidity`, `voltage`, `current`, `power`)    VALUES(%s, %s, %s, %s, %s)"
-        cur.execute(sql, (x, y, z, i, p))
+        sql = "INSERT INTO `dashboard`(`temperature`, `humidity`, `voltage`, `current`, `power`, `date`, `time`, `s_current`, `s_voltage`, `s_power`)    VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+        cur.execute(sql, (x, y, z, i, p, d, t, I, V, P))
         rows = cur.fetchall()
 
         for row in rows:
